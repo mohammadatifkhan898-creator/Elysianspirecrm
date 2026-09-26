@@ -14,9 +14,43 @@ Restaurant management CRM for Elysian Spire — Vite + React + TypeScript SPA wi
 
 1. `npm install`
 2. Copy `.env.example` to `.env.local` and fill in:
-   - `VITE_CLERK_PUBLISHABLE_KEY` — Clerk publishable key
+   - `VITE_CLERK_PUBLISHABLE_KEY` — Clerk publishable key (`pk_test_…` / `pk_live_…`).
+     Get it from Clerk Dashboard → your app → API Keys → **Publishable key**.
+     It is public and safe to ship. Never use the Clerk **secret** key (`sk_…`) here.
    - `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY` — Supabase project URL and publishable key
 3. `npm run dev`
+
+### Clerk troubleshooting
+
+The publishable key embeds your Clerk **Frontend API** host, and the browser
+downloads `clerk.browser.js` from that host. If the host is wrong or is not
+provisioned, sign-in cannot start. `ClerkGate` (`src/components/auth/ClerkGate.tsx`)
+turns both failure modes into a named error screen rather than an endless
+spinner:
+
+| Symptom | Cause | Fix |
+| --- | --- | --- |
+| "Sign-in unavailable" immediately | `VITE_CLERK_PUBLISHABLE_KEY` missing or malformed | Set the env var and rebuild |
+| "Could not reach sign-in" after ~12s | Key is valid but its Frontend API host is unreachable | Point the key at a real, provisioned Clerk instance |
+
+## Deployment (Vercel)
+
+`vercel.json` builds with `npm run build`, publishes `dist/`, and rewrites all
+non-`/assets/` paths to `/index.html` so direct navigation to app routes does not
+404.
+
+Required environment variables (Project → Settings → Environment Variables):
+
+- `VITE_CLERK_PUBLISHABLE_KEY` — **must** be a valid Clerk publishable key
+- `VITE_SUPABASE_URL`
+- `VITE_SUPABASE_PUBLISHABLE_KEY`
+
+Vite inlines `VITE_*` variables at **build** time, so changing these requires a
+redeploy, not just a restart.
+
+Note: the app uses `HashRouter`, so canonical deep links look like
+`/#/login`. Requesting `/login` also works — the rewrite serves the SPA, which
+then redirects to the hash route.
 
 ## Scripts
 

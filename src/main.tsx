@@ -1,30 +1,32 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import { ClerkProvider } from '@clerk/react';
 import App from './App';
 import './styles.css';
-import { clerkPublishableKey } from './lib/clerk';
+import { ClerkGate } from './components/auth/ClerkGate';
+import { clerkConfig } from './lib/clerk';
 
 function renderApp() {
   ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
     <React.StrictMode>
-      <ClerkProvider publishableKey={clerkPublishableKey}>
+      <ClerkGate>
         <App />
-      </ClerkProvider>
+      </ClerkGate>
     </React.StrictMode>
   );
 }
 
-/* Failure to load the publishable key is a misconfiguration, not a runtime
-   error worth masking. Surface it loudly in development. The key itself is
-   never printed. */
-if (!clerkPublishableKey) {
+/* A missing or malformed key is a misconfiguration, not a runtime error worth
+   masking. ClerkGate already renders an actionable error screen for it, so we
+   only surface the developer-facing signal here. The key itself is never
+   printed — only the validation verdict. */
+if (clerkConfig.status !== 'ok') {
+  const detail = `VITE_CLERK_PUBLISHABLE_KEY is ${
+    clerkConfig.status === 'missing' ? 'missing' : 'malformed'
+  }. Clerk auth cannot start.`;
   if (import.meta.env.DEV) {
-    throw new Error(
-      'Clerk is not configured. Set VITE_CLERK_PUBLISHABLE_KEY in .env.local (publishable key only — never the secret key).'
-    );
+    throw new Error(`${detail} Set VITE_CLERK_PUBLISHABLE_KEY in .env.local (publishable key only — never the secret key).`);
   }
-  console.error('[auth] VITE_CLERK_PUBLISHABLE_KEY is missing — Clerk auth is disabled.');
+  console.error(`[auth] ${detail}`);
 }
 
 renderApp();
